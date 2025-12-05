@@ -99,12 +99,19 @@ celerybeat-schedule
 .turbo/
 
 # ========================================
-# FILES TO KEEP (NOT IGNORED):
+# INTERNAL/DRAFT DOCUMENTS (NOT FOR REPO)
 # ========================================
-# - README.md (project documentation)
-# - SETUP.md (setup instructions)
-# - videoscript.md (demo video script)
-# - presentation.md (hackathon slides)
-# - sample_policies/*.md (test policies)
-# - walkthrough.md (if exists)
+brainstorming.md
+hackathon_research.md
+idea.md
+walkthrough.md
+
+# ========================================
+# FILES TO KEEP (TRACKED):
+# ========================================
+# - README.md
+# - SETUP.md
+# - videoscript.md
+# - presentation.md
+# - sample_policies/*.md
 # ========================================
