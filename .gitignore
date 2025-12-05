@@ -60,7 +60,7 @@ logs/
 ehthumbs.db
 Thumbs.db
 
-# Test files
+# Test files (temporary PDFs generated during testing)
 test_*.pdf
 test_download*.pdf
 
@@ -97,3 +97,14 @@ celerybeat-schedule
 
 # Turbopack
 .turbo/
+
+# ========================================
+# FILES TO KEEP (NOT IGNORED):
+# ========================================
+# - README.md (project documentation)
+# - SETUP.md (setup instructions)
+# - videoscript.md (demo video script)
+# - presentation.md (hackathon slides)
+# - sample_policies/*.md (test policies)
+# - walkthrough.md (if exists)
+# ========================================
