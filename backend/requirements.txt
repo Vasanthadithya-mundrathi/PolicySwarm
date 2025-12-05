@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+python-dotenv
+pydantic
+requests
+requests
+langchain
+langchain-community
+# zyndai-agent # Attempting to use if available, else will mock identity
