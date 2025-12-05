@@ -1,22 +1,22 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Eye } from 'lucide-react';
 
-interface Log {
+interface SenateMessage {
     agent: string;
     role: string;
     message: string;
 }
 
-interface DebateFeedProps {
-    logs: Log[];
+interface SenateChatFeedProps {
+    logs: SenateMessage[];
 }
 
-export default function DebateFeed({ logs }: DebateFeedProps) {
+export default function SenateChatFeed({ logs }: SenateChatFeedProps) {
     const containerRef = useRef<HTMLDivElement>(null);
     const [autoScroll, setAutoScroll] = useState(true);
     const prevLogsLength = useRef(logs.length);
 
-    // Detect user scroll
     const handleScroll = () => {
         if (!containerRef.current) return;
         const { scrollTop, scrollHeight, clientHeight } = containerRef.current;
@@ -37,10 +37,10 @@ export default function DebateFeed({ logs }: DebateFeedProps) {
         <div
             ref={containerRef}
             onScroll={handleScroll}
-            className="bg-slate-900/50 border border-slate-800 rounded-2xl p-4 h-full overflow-y-auto custom-scrollbar relative"
+            className="bg-slate-900/50 border border-emerald-500/30 rounded-2xl p-4 h-full overflow-y-auto custom-scrollbar relative"
         >
             <AnimatePresence mode='popLayout'>
-                {logs.filter(l => l.role !== "System").map((log, i) => (
+                {logs.filter(l => l.agent !== "System").map((log, i) => (
                     <motion.div
                         key={i}
                         initial={{ opacity: 0, y: 10 }}
@@ -48,9 +48,10 @@ export default function DebateFeed({ logs }: DebateFeedProps) {
                         transition={{ duration: 0.2 }}
                         className="mb-3"
                     >
-                        <div className="p-3 rounded-xl bg-blue-900/20 border border-blue-500/30">
+                        <div className="p-3 rounded-xl bg-emerald-900/20 border border-emerald-500/30">
                             <div className="flex items-center gap-2 mb-1">
-                                <span className="font-bold text-sm text-blue-400">
+                                <Eye className="w-4 h-4 text-emerald-400" />
+                                <span className="font-bold text-sm text-emerald-400">
                                     {log.agent}
                                 </span>
                                 <span className="text-[10px] text-slate-500 uppercase tracking-wider">
@@ -63,9 +64,10 @@ export default function DebateFeed({ logs }: DebateFeedProps) {
                 ))}
             </AnimatePresence>
 
-            {logs.filter(l => l.role !== "System").length === 0 && (
+            {logs.filter(l => l.agent !== "System").length === 0 && (
                 <div className="h-full flex items-center justify-center text-slate-500 text-sm">
-                    Citizen debate will appear here...
+                    <Eye className="w-6 h-6 mr-2 opacity-50" />
+                    Senate debate will appear here...
                 </div>
             )}
         </div>

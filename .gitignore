@@ -27,11 +27,20 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Environment
+# Environment & API Keys
 .env
 .env.local
 .env.*.local
+# Uncomment if storing API keys in config.json
+# backend/config.json
+
+# Logs
 *.log
+backend.log
+frontend.log
+backend_test.log
+frontend_test.log
+logs/
 
 # IDEs
 .vscode/
@@ -39,19 +48,21 @@ yarn-error.log*
 *.swp
 *.swo
 *~
+
+# macOS
 .DS_Store
 .DS_Store?
 ._*
 .Spotlight-V100
 .Trashes
+
+# Windows
 ehthumbs.db
 Thumbs.db
 
-# Logs
-*.log
-backend.log
-frontend.log
-logs/
+# Test files
+test_*.pdf
+test_download*.pdf
 
 # Test coverage
 .coverage
@@ -65,12 +76,9 @@ coverage.xml
 .cache/
 .temp/
 tmp/
-.cache/
 *.pyc
 *.pyo
 *.pyd
-.Python
-*.so
 .tox/
 .venv/
 __pypackages__/
@@ -86,3 +94,6 @@ celerybeat-schedule
 .vuepress/dist
 .serverless/
 .fusebox/
+
+# Turbopack
+.turbo/

@@ -1,0 +1,33 @@
+{
+    "llm_provider": "ollama",
+    "ollama": {
+        "enabled": true,
+        "base_url": "http://localhost:11434",
+        "model": "gemma3:12b",
+        "description": "Local Ollama - RECOMMENDED for policy privacy"
+    },
+    "openai": {
+        "enabled": false,
+        "api_key": "",
+        "model": "gpt-4o-mini",
+        "description": "OpenAI GPT models"
+    },
+    "gemini": {
+        "enabled": false,
+        "api_key": "",
+        "model": "gemini-1.5-flash",
+        "description": "Google Gemini models"
+    },
+    "blaxel": {
+        "enabled": false,
+        "api_key": "",
+        "workspace": "",
+        "model": "blaxel-agent",
+        "description": "Blaxel AI platform"
+    },
+    "_comments": {
+        "why_local": "Policy documents may contain sensitive government data. Local models (Ollama) ensure data never leaves your machine - critical for pre-publication policy testing.",
+        "how_to_switch": "Set 'llm_provider' to 'ollama', 'openai', 'gemini', or 'blaxel'. Then fill in the API key for your chosen provider.",
+        "security": "Never commit this file with API keys. Add to .gitignore if sharing code."
+    }
+}

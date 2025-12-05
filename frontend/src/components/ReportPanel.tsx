@@ -5,29 +5,33 @@ import { motion } from 'framer-motion';
 
 interface ReportPanelProps {
     report: string;
-    isRunning: boolean;
 }
 
-export default function ReportPanel({ report, isRunning }: ReportPanelProps) {
+export default function ReportPanel({ report }: ReportPanelProps) {
     return (
-        <div className="bg-slate-900/50 border border-slate-800 rounded-3xl p-8 h-full overflow-y-auto custom-scrollbar shadow-xl relative flex flex-col">
-            <div className="flex items-center gap-3 mb-6 sticky top-0 bg-slate-900/90 backdrop-blur p-2 -mx-2 -mt-2 z-10 shrink-0">
-                <ShieldCheck className="w-6 h-6 text-emerald-400" />
-                <h2 className="text-xl font-bold text-emerald-100">Architect's Final Decree</h2>
-            </div>
-
+        <div className="h-full overflow-y-auto custom-scrollbar">
             {report ? (
                 <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    className="prose prose-invert prose-sm max-w-none flex-grow overflow-y-auto"
+                    className="prose prose-invert prose-sm max-w-none 
+                        prose-headings:text-emerald-400 prose-headings:font-bold prose-headings:border-b prose-headings:border-slate-700 prose-headings:pb-2 prose-headings:mb-4
+                        prose-h1:text-2xl prose-h1:text-purple-400
+                        prose-h2:text-xl prose-h2:text-emerald-400
+                        prose-h3:text-lg prose-h3:text-blue-400
+                        prose-p:text-slate-300 prose-p:leading-relaxed
+                        prose-ul:text-slate-300
+                        prose-li:marker:text-emerald-500
+                        prose-strong:text-white
+                        prose-code:bg-slate-800 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-amber-400
+                        prose-pre:bg-slate-900 prose-pre:border prose-pre:border-slate-700"
                 >
                     <ReactMarkdown>{report}</ReactMarkdown>
                 </motion.div>
             ) : (
                 <div className="h-full flex flex-col items-center justify-center text-slate-600 gap-4">
-                    <Activity className={`w-12 h-12 ${isRunning ? "animate-pulse text-purple-500" : "text-slate-800"}`} />
-                    <p className="font-medium">{isRunning ? "Synthesizing Consensus..." : "Awaiting Simulation Data"}</p>
+                    <Activity className="w-12 h-12 text-slate-700" />
+                    <p className="font-medium text-sm">Awaiting analysis...</p>
                 </div>
             )}
         </div>

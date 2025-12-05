@@ -1,9 +1,12 @@
 import asyncio
 from fastapi import FastAPI, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import PlainTextResponse, StreamingResponse
 from agents.citizen_agent import CitizenAgent, CitizenPersona
 from agents.observer_agent import ObserverAgent
 from agents.architect_agent import ArchitectAgent
+from core.pdf_generator import create_policy_pdf
+import json
 
 app = FastAPI()
 
@@ -17,7 +20,7 @@ app.add_middleware(
 
 # Configuration
 config = {
-    "fast_demo": False,  # Toggle for fast demo mode
+    "fast_demo": False,
     "max_exchanges": 100,
     "max_senate_exchanges": 10
 }
@@ -28,247 +31,312 @@ debate_history = []
 observer_reports = []
 final_report = ""
 metrics = []
-policy_document = None  # Store uploaded policy document
+policy_document = None
+current_iteration = 0
+simulation_paused = False
+cycle_complete = False
+current_policy = ""
+revised_policy = ""
+architect_logs = []  # Real-time architect analysis logs
+senate_chat_logs = []  # Separate Senate chat logs
 
-def log_event(agent_name: str, message: str, role: str = "System"):
+def log_event(agent_name: str, message: str, role: str = "System", log_type: str = "general"):
     print(f"[{agent_name}] {message}")
-    logs.append({"agent": agent_name, "role": role, "message": message})
+    log_entry = {"agent": agent_name, "role": role, "message": message, "type": log_type}
+    logs.append(log_entry)
+    
+    # Route to specific log types
+    if log_type == "senate":
+        senate_chat_logs.append(log_entry)
+    elif log_type == "architect":
+        architect_logs.append(log_entry)
 
-# Initialize Agents
+# Initialize Agents with realistic Indian personas
 personas = [
     CitizenPersona(
-        name="Sarah", role="Single Mom",
-        background="34, Part-time nurse, 2 kids. Receives Universal Credit.",
-        traits=["Struggling with cost of living", "Worried about childcare", "Skeptical of politicians", "Prioritizes NHS and stability"]
+        name="Anjali", role="Single Mother",
+        background="35, PWD teacher in Mumbai, 2 kids. Relies on mid-day meal scheme for children.",
+        traits=["Struggling with inflation", "Worried about education costs", "Skeptical of promises", "Prioritizes stability"]
     ),
     CitizenPersona(
-        name="Jamal", role="Gig Worker",
-        background="26, Uber driver & Deliveroo rider. Renting in Zone 4.",
-        traits=["Values flexibility but hates instability", "No sick pay", "Anxious about rent", "Tech-savvy but cynical"]
+        name="Raju", role="Auto Driver",
+        background="42, Auto-rickshaw driver in Delhi. Paying EMI on vehicle. No health insurance.",
+        traits=["Values freedom", "Hates sudden rule changes", "Cash-dependent", "Street smart but cynical"]
     ),
     CitizenPersona(
-        name="Richard", role="CEO",
-        background="52, CEO of a mid-sized logistics firm. Homeowner.",
-        traits=["Concerned about interest rates", "Dislikes red tape", "Focused on growth & stability", "Pragmatic"]
+        name="Vikram", role="Business Owner",
+        background="48, Owns textile factory in Surat. 200 employees. GST compliant.",
+        traits=["Dislikes bureaucracy", "Focused on growth", "Pragmatic", "Votes for stability"]
     ),
     CitizenPersona(
-        name="Elsie", role="Retiree",
-        background="74, Retired teacher. Owns home outright. Relies on state pension.",
-        traits=["Protective of Triple Lock pension", "NHS is #1 priority", "Resistant to radical change", "Votes consistently"]
+        name="Kamla Devi", role="Retired Teacher",
+        background="68, Retired government school teacher. Lives in Jaipur. Depends on pension.",
+        traits=["Protective of pension", "Healthcare is priority", "Distrusts new schemes", "Votes consistently"]
     ),
     CitizenPersona(
-        name="Chloe", role="Student",
-        background="19, University student. High debt. Climate activist.",
-        traits=["Idealistic", "Anxious about climate & housing", "Feels ignored by politics", "Socially liberal"]
+        name="Arjun", role="College Student",
+        background="21, Engineering student in Bangalore. Education loan. Climate activist.",
+        traits=["Idealistic", "Anxious about jobs", "Active on social media", "Questions authority"]
     ),
     CitizenPersona(
-        name="Dave", role="Small Business Owner",
-        background="45, Runs a local bakery. Struggling with energy bills.",
-        traits=["Hardworking", "Stressed about costs", "Community-focused", "Hates tax hikes"]
+        name="Lakshmi", role="Small Shop Owner",
+        background="40, Runs kirana store in Chennai. Competes with online giants.",
+        traits=["Hardworking", "Stressed about competition", "Community-focused", "Cash business"]
     ),
     CitizenPersona(
-        name="Priya", role="Tech Lead",
-        background="31, Software Engineer. High earner but priced out of housing market.",
-        traits=["Ambitious", "Frustrated by housing crisis", "Pro-innovation", "Global outlook"]
+        name="Arun", role="IT Professional",
+        background="29, Software engineer in Hyderabad. High earner but can't afford flat.",
+        traits=["Ambitious", "Frustrated by housing costs", "Pro-digital", "Global outlook"]
     ),
     CitizenPersona(
-        name="Gavin", role="Factory Worker",
-        background="50, Auto plant worker. Union member. Worried about automation.",
-        traits=["Values job security", "Loyal to community", "Skeptical of green policies if they cost jobs", "Traditional"]
+        name="Bholaram", role="Factory Worker",
+        background="45, Works in automobile plant in Pune. Union member. 25 years experience.",
+        traits=["Values job security", "Loyal to union", "Skeptical of automation", "Traditional values"]
     ),
     CitizenPersona(
-        name="Maria", role="NHS Doctor",
-        background="38, Junior Doctor. Overworked and underpaid.",
-        traits=["Passionate about public service", "Burned out", "Critical of government management", "Empathetic"]
+        name="Dr. Priya", role="Government Doctor",
+        background="36, Works at district hospital in UP. Overworked. Posted in rural area.",
+        traits=["Passionate about service", "Burned out", "Critical of health infrastructure", "Empathetic"]
     ),
     CitizenPersona(
-        name="Tom", role="Farmer",
-        background="60, Sheep farmer. Struggling with post-Brexit subsidies.",
-        traits=["Independent", "Worried about rural crime & costs", "Feels misunderstood by city folk", "Conservative"]
+        name="Ramesh", role="Farmer",
+        background="55, Wheat farmer in Punjab. 10 acres. Worried about MSP and water.",
+        traits=["Independent", "Worried about input costs", "Distrusts corporates", "Protective of land"]
     )
 ]
 
 citizens = [CitizenAgent(p) for p in personas]
 
 observers = [
-    ObserverAgent(role="Trend Watcher", focus="Social Sentiment & Future Trends"),
-    ObserverAgent(role="Strategy Lead", focus="Economic Viability & Implementation"),
-    ObserverAgent(role="Ethics Guardian", focus="Fairness & Human Rights")
+    ObserverAgent(role="Trend Analyst", focus="Social Sentiment & Public Opinion"),
+    ObserverAgent(role="Economic Advisor", focus="Fiscal Impact & Implementation Cost"),
+    ObserverAgent(role="Constitutional Expert", focus="Legal Validity & Rights Protection")
 ]
 
 architect = ArchitectAgent()
 
 async def run_simulation(initial_policy: str):
-    global final_report
-    current_policy = initial_policy
+    global final_report, current_iteration, simulation_paused, cycle_complete
+    global current_policy, revised_policy, architect_logs, senate_chat_logs
     
-    for iteration in range(1, 4): # Max 3 iterations
-        log_event("System", f"--- Iteration {iteration}/3 ---")
-        log_event("System", f"Current Policy: {current_policy}")
+    current_policy = initial_policy
+    cycle_complete = False
+    
+    for iteration in range(1, 4):
+        current_iteration = iteration
         
-        # LEVEL 1: Citizen Conversation (The \"Chat\")
-        log_event("System", "Phase 1: Citizen Swarm Debate (Level 1)")
-        conversation_log = []
+        # Check if paused
+        while simulation_paused:
+            await asyncio.sleep(1)
         
-        # Initial reactions to policy
-        tasks = [c.react_to_policy(current_policy) for c in citizens]
+        if cycle_complete:
+            break
+            
+        log_event("System", f"═══════════════════════════════════════")
+        log_event("System", f"  ITERATION {iteration}/3 STARTING")
+        log_event("System", f"═══════════════════════════════════════")
+        
+        # LEVEL 1: Citizen Conversation
+        log_event("System", "Phase 1: Citizen Swarm Debate", log_type="general")
+        
+        # Reset citizens for new iteration (but keep memory)
+        if iteration > 1:
+            for c in citizens:
+                c.reset_for_new_iteration(current_policy, iteration)
+        
+        # Initial reactions
+        tasks = [c.react_to_policy(current_policy, iteration) for c in citizens]
         reactions = await asyncio.gather(*tasks)
         
         citizen_scores = []
-        conversation_messages = []  # Track all messages for context
+        conversation_messages = []
+        citizen_feedback = []
         
         for r in reactions:
-            log_event(r["agent"], f"{r['message']} (Score: {r['score']})", r["role"])
-            conversation_log.append(f"{r['agent']} ({r['role']}): {r['message']}")
+            emotional = r.get('emotional_state', 'neutral')
+            msg = f"[{emotional.upper()}] {r['message']} (Score: {r['score']})"
+            log_event(r["agent"], msg, r["role"])
             conversation_messages.append({"agent": r["agent"], "role": r["role"], "message": r['message']})
             debate_history.append(r)
             citizen_scores.append(r['score'])
+            citizen_feedback.append(r)
             await asyncio.sleep(0.1)
-            
-        # RICH CONVERSATIONAL DEBATE: Uses config for exchange count
+        
+        # Conversational debate
         max_exchanges = config["max_exchanges"]
-        log_event("System", f"Citizens are now engaging in deep conversation (up to {max_exchanges} exchanges)...")
+        log_event("System", f"Citizens engaging in conversation ({max_exchanges} exchanges)...")
         
         import random
-        active_citizens = list(citizens)  # Track who's still in the conversation
-        exchange_count = len(reactions)  # Start counting from initial reactions
+        active_citizens = list(citizens)
+        exchange_count = len(reactions)
         
-        MAX_EXCHANGES = max_exchanges
-        
-        while exchange_count < MAX_EXCHANGES and len(active_citizens) > 2:
-            # Pick a random active citizen to speak
+        while exchange_count < max_exchanges and len(active_citizens) > 2:
+            if simulation_paused or cycle_complete:
+                break
+                
             speaker = random.choice(active_citizens)
             
-            # Generate contextual reply
             reply_data = await speaker.reply_to_conversation(
                 current_policy, 
                 conversation_messages, 
-                exchange_count
+                exchange_count,
+                iteration
             )
             
-            # Log the message
             if reply_data["should_exit"]:
-                exit_msg = f"{reply_data['message']} [{reply_data['exit_reason']}]"
+                exit_msg = f"{reply_data['message']} [Leaving: {reply_data['exit_reason']}]"
                 log_event(speaker.name, exit_msg, speaker.role)
                 conversation_messages.append({"agent": speaker.name, "role": speaker.role, "message": exit_msg})
-                debate_history.append({"agent": speaker.name, "role": speaker.role, "message": exit_msg})
                 active_citizens.remove(speaker)
-                log_event("System", f"{speaker.name} has left the conversation.")
+                log_event("System", f"👋 {speaker.name} has left the conversation.")
             else:
                 log_event(speaker.name, reply_data['message'], speaker.role)
                 conversation_messages.append({"agent": speaker.name, "role": speaker.role, "message": reply_data['message']})
                 debate_history.append({"agent": speaker.name, "role": speaker.role, "message": reply_data['message']})
             
-            conversation_log.append(f"{speaker.name}: {reply_data['message']}")
             exchange_count += 1
-            
-            # Small delay to avoid overwhelming the LLM
             await asyncio.sleep(0.3)
         
-        log_event("System", f"Conversation concluded after {exchange_count} exchanges.")
-
+        log_event("System", f"Citizen debate concluded: {exchange_count} exchanges.")
         avg_citizen_score = sum(citizen_scores) / len(citizen_scores) if citizen_scores else 0
-        log_event("System", f"Average Citizen Satisfaction: {avg_citizen_score:.1f}%")
-
-        # LEVEL 2: Senate Strategic Debate (10 exchanges)
-        log_event("System", "Phase 2: Senate Strategic Debate (Level 2)")
-        log_event("System", "Senate observers are analyzing the citizen conversation and debating viability...")
+        log_event("System", f"📊 Average Citizen Satisfaction: {avg_citizen_score:.1f}%")
         
-        # First, get initial analysis from each observer
-        full_conversation_text = "\n".join(conversation_log)
+        # LEVEL 2: Senate Strategic Debate
+        log_event("System", "Phase 2: Senate Strategic Debate", log_type="senate")
+        senate_chat_logs = []  # Clear for new iteration
         
-        tasks = [o.analyze_debate(current_policy, [{"agent": "Conversation", "role": "Log", "message": full_conversation_text}]) for o in observers]
+        # Reset observers for new iteration
+        if iteration > 1:
+            citizen_summary = " ".join([f['message'][:50] for f in citizen_feedback[:5]])
+            for o in observers:
+                o.reset_for_new_iteration(current_policy, citizen_summary, iteration)
+        
+        # Initial Senate analysis
+        full_conversation = "\n".join([f"{m['agent']}: {m['message']}" for m in conversation_messages[:20]])
+        
+        tasks = [o.analyze_debate(current_policy, citizen_feedback, iteration) for o in observers]
         initial_reports = await asyncio.gather(*tasks)
         
         senate_scores = []
-        senate_messages = []  # Track Senate conversation
+        senate_messages = []
         
-        # Log initial analysis
         for r in initial_reports:
-            log_event(r["agent"], f"[Initial Analysis] {r['message']} (Score: {r['score']})", r["focus"])
-            senate_messages.append({"agent": r["agent"], "role": r["focus"], "message": f"[Initial] {r['message']}"})
-            debate_history.append({"agent": r["agent"], "role": r["focus"], "message": f"[Initial] {r['message']}", "score": r['score']})
+            msg = f"[INITIAL] {r['message']} (Viability: {r['score']}%, Recommendation: {r.get('recommendation', 'pending')})"
+            log_event(r["agent"], msg, r["focus"], log_type="senate")
+            senate_messages.append({"agent": r["agent"], "role": r["focus"], "message": r['message']})
             senate_scores.append(r['score'])
+            observer_reports.append(r)
             await asyncio.sleep(0.3)
         
-        # SENATE CONVERSATION: Uses config for exchange count
+        # Senate conversation
         max_senate_exchanges = config["max_senate_exchanges"]
-        log_event("System", f"Senate is now engaging in strategic discussion ({max_senate_exchanges} exchanges)...")
+        log_event("System", f"Senate strategic discussion ({max_senate_exchanges} exchanges)...", log_type="senate")
         
         senate_exchange_count = 0
-        MAX_SENATE_EXCHANGES = max_senate_exchanges
-        
-        while senate_exchange_count < MAX_SENATE_EXCHANGES:
-            # Pick a random observer to speak
-            import random
+        while senate_exchange_count < max_senate_exchanges:
+            if simulation_paused or cycle_complete:
+                break
+                
             speaker = random.choice(observers)
             
-            # Generate strategic reply
             reply_data = await speaker.reply_to_senate_debate(
                 current_policy,
-                full_conversation_text,
+                full_conversation,
                 senate_messages,
-                senate_exchange_count
+                senate_exchange_count,
+                iteration
             )
             
-            # Log the message
-            log_event(speaker.role, reply_data['message'], speaker.focus)
+            log_event(speaker.role, reply_data['message'], speaker.focus, log_type="senate")
             senate_messages.append({"agent": speaker.role, "role": speaker.focus, "message": reply_data['message']})
-            debate_history.append({"agent": speaker.role, "role": speaker.focus, "message": reply_data['message']})
             
             senate_exchange_count += 1
             await asyncio.sleep(0.4)
         
-        log_event("System", f"Senate debate concluded after {senate_exchange_count} exchanges.")
+        # Final verdict from each Senate member
+        log_event("System", "Senate finalizing verdicts...", log_type="senate")
         
-        # Final Senate conclusion: re-score after discussion
-        log_event("System", "Senate is finalizing viability scores after discussion...")
-        tasks = [o.analyze_debate(current_policy, [{"agent": "Conversation", "role": "Log", "message": full_conversation_text}]) for o in observers]
-        final_reports = await asyncio.gather(*tasks)
+        tasks = [o.final_verdict(current_policy, senate_messages, avg_citizen_score, iteration) for o in observers]
+        final_verdicts = await asyncio.gather(*tasks)
         
-        observer_reports = final_reports  # Store for architect
-        senate_scores = []  # Recalculate after debate
-        
-        for r in final_reports:
-            log_event(r["agent"], f"[Final Score] {r['message']} (Score: {r['score']})", r["focus"])
-            debate_history.append({"agent": r["agent"], "role": r["focus"], "message": f"[Final] {r['message']}", "score": r['score']})
-            senate_scores.append(r['score'])
+        senate_scores = []
+        for v in final_verdicts:
+            log_event(v["agent"], v['message'], v["focus"], log_type="senate")
+            senate_scores.append(v['score'])
+            observer_reports.append(v)
             await asyncio.sleep(0.3)
-
-        avg_senate_score = sum(senate_scores) / len(senate_scores) if senate_scores else 0
-        log_event("System", f"Average Senate Viability Score: {avg_senate_score:.1f}%")
         
-        # Record Metrics
+        avg_senate_score = sum(senate_scores) / len(senate_scores) if senate_scores else 0
+        log_event("System", f"📊 Average Senate Viability: {avg_senate_score:.1f}%", log_type="senate")
+        
+        # Record metrics
         metrics.append({
             "iteration": iteration,
             "citizen_score": round(avg_citizen_score, 1),
             "senate_score": round(avg_senate_score, 1)
         })
         
-        # Check Thresholds
-        if avg_citizen_score > 75 and avg_senate_score > 80:
-            log_event("System", "✅ Consensus Reached! Policy Ratified.")
-            # Final Level 3 Synthesis for the "Win" state
-            synthesis = await architect.generate_report(current_policy, reports)
-            final_report = synthesis.get("report_markdown", "Error generating report.")
+        # Check consensus
+        if avg_citizen_score >= 75 and avg_senate_score >= 80:
+            log_event("System", "🎉 CONSENSUS REACHED!")
+            cycle_complete = True
+            final_report = architect.get_downloadable_policy(current_policy, metrics)
             break
-            
-        if iteration < 3:
-            log_event("System", "⚠️ Consensus Not Met. Level 3 Architect rewriting policy...")
-            # LEVEL 3: Architect Synthesis (The "Rewrite")
-            synthesis = await architect.generate_report(current_policy, reports)
-            current_policy = synthesis.get("new_policy", current_policy)
-            final_report = synthesis.get("report_markdown", "Error generating report.")
-        else:
-            log_event("System", "🛑 Max Iterations Reached. Finalizing best effort.")
-            synthesis = await architect.generate_report(current_policy, reports)
-            final_report = synthesis.get("report_markdown", "Error generating report.")
+        
+        # LEVEL 3: Architect Analysis & Revision
+        log_event("System", "Phase 3: Architect Analysis", log_type="architect")
+        architect_logs = []  # Clear for new iteration
+        
+        log_event("Architect", "Beginning step-by-step policy analysis...", "Policy Architect", log_type="architect")
+        
+        # Run architect analysis
+        synthesis = await architect.generate_report(
+            current_policy, 
+            observer_reports, 
+            citizen_feedback, 
+            iteration
+        )
+        
+        # Log architect's steps
+        for step_log in architect.get_analysis_logs():
+            log_event("Architect", f"[{step_log['step']}] {step_log['content'][:200]}...", "Analysis", log_type="architect")
+            await asyncio.sleep(0.2)
+        
+        # Update policy for next iteration
+        revised_policy = synthesis.get("new_policy", current_policy)
+        final_report = synthesis.get("report_markdown", "")
+        
+        log_event("System", f"Policy revised for iteration {iteration + 1}")
+        log_event("Architect", f"Changes: {json.dumps(synthesis.get('diff', {}).get('summary', 'Policy updated'))}", "Policy Architect", log_type="architect")
+        
+        current_policy = revised_policy
+    
+    if not cycle_complete:
+        log_event("System", "⚠️ Max iterations reached. Best effort policy generated.")
+        final_report = architect.get_downloadable_policy(current_policy, metrics)
+    
+    cycle_complete = True
+    log_event("System", "Simulation complete. Policy ready for download.")
 
-    log_event("Architect", "Final Report Generated.", "System")
-
+# API Endpoints
 @app.get("/logs")
 def get_logs():
     return logs
+
+@app.get("/citizen-logs")
+def get_citizen_logs():
+    """Get only Citizen debate logs (excludes senate and architect)"""
+    return [l for l in logs if l.get("type", "general") not in ["senate", "architect"]]
+
+@app.get("/senate-logs")
+def get_senate_logs():
+    """Get only Senate conversation logs"""
+    return senate_chat_logs
+
+@app.get("/architect-logs")
+def get_architect_logs():
+    """Get real-time Architect analysis logs"""
+    return architect_logs
 
 @app.get("/metrics")
 def get_metrics():
@@ -282,14 +350,22 @@ def get_agents():
 def get_report():
     return {"report": final_report}
 
+@app.get("/status")
+def get_status():
+    """Get current simulation status"""
+    return {
+        "iteration": current_iteration,
+        "paused": simulation_paused,
+        "complete": cycle_complete,
+        "current_policy": current_policy[:200] if current_policy else ""
+    }
+
 @app.get("/config")
 def get_config():
-    """Get current configuration"""
     return config
 
 @app.post("/config")
 async def update_config(fast_demo: bool):
-    """Toggle fast demo mode"""
     global config
     config["fast_demo"] = fast_demo
     if fast_demo:
@@ -300,40 +376,119 @@ async def update_config(fast_demo: bool):
         config["max_senate_exchanges"] = 10
     return {"status": "Config updated", "config": config}
 
+@app.post("/api/pause-cycle")
+async def pause_cycle():
+    """Pause the current simulation"""
+    global simulation_paused
+    simulation_paused = True
+    return {"status": "Simulation paused"}
+
+@app.post("/api/continue-cycle")
+async def continue_cycle():
+    """Continue the paused simulation"""
+    global simulation_paused
+    simulation_paused = False
+    return {"status": "Simulation resumed"}
+
+@app.post("/api/stop-and-download")
+async def stop_and_download():
+    """Stop simulation and return downloadable policy"""
+    global cycle_complete, simulation_paused
+    cycle_complete = True
+    simulation_paused = False
+    
+    download_content = architect.get_downloadable_policy(current_policy, metrics)
+    return {"status": "Cycle stopped", "policy": download_content}
+
+@app.get("/api/download-policy")
+def download_policy():
+    """Download the final policy as professional PDF"""
+    # Gather data for PDF
+    citizen_score = metrics[-1]["citizen_score"] if metrics else 50.0
+    senate_score = metrics[-1]["senate_score"] if metrics else 50.0
+    
+    # Extract citizen feedback summary from logs
+    citizen_msgs = [l["message"] for l in logs if l.get("type") != "senate" and l.get("type") != "architect" and l["role"] != "System"][:5]
+    citizen_summary = "\n".join([f"• {msg[:150]}..." for msg in citizen_msgs]) if citizen_msgs else "No citizen feedback recorded."
+    
+    # Extract senate analysis from logs
+    senate_msgs = [l["message"] for l in senate_chat_logs if l["agent"] != "System"][:3]
+    senate_summary = "\n".join([f"• {msg[:150]}..." for msg in senate_msgs]) if senate_msgs else "No senate analysis recorded."
+    
+    # Generate PDF
+    pdf_buffer = create_policy_pdf(
+        policy_title=policy_document.get("filename", "Policy Document").replace(".md", "").replace("_", " ").title() if policy_document else "Policy Proposal",
+        original_policy=current_policy or "No original policy provided.",
+        revised_policy=architect.revised_policy if hasattr(architect, 'revised_policy') and architect.revised_policy else "Policy revision pending completion of consensus process.",
+        citizen_feedback_summary=citizen_summary,
+        senate_analysis=senate_summary,
+        eligibility_criteria=[
+            "All citizens affected by the policy provisions",
+            "Registered taxpayers and benefit recipients",
+            "Small business owners and entrepreneurs",
+            "Vulnerable groups including senior citizens and low-income families",
+            "Additional criteria as specified in policy sections"
+        ],
+        benefits_summary=[
+            "Simplified access to government services",
+            "Transparent eligibility verification process",
+            "Reduced bureaucratic delays in benefit delivery",
+            "Digital-first approach for faster processing",
+            "Grievance redressal mechanism with defined timelines"
+        ],
+        citizen_score=citizen_score,
+        senate_score=senate_score,
+        iteration_count=current_iteration
+    )
+    
+    return StreamingResponse(
+        pdf_buffer,
+        media_type="application/pdf",
+        headers={"Content-Disposition": "attachment; filename=PolicySwarm_Report.pdf"}
+    )
+
 @app.post("/api/upload-policy")
-async def upload_policy_file(file: bytes, filename: str, background_tasks: BackgroundTasks):
+async def upload_policy_file(file: str, filename: str, background_tasks: BackgroundTasks):
     """Upload a markdown policy file"""
-    global policy_document
+    global policy_document, logs, debate_history, observer_reports, final_report, metrics
+    global current_iteration, simulation_paused, cycle_complete, architect_logs, senate_chat_logs
+    
     try:
-        content = file.decode('utf-8')
-        policy_document = {"filename": filename, "content": content}
+        policy_document = {"filename": filename, "content": file}
         
-        # Extract policy summary (first paragraph or heading)
-        lines = content.split('\n')
-        policy_summary = '\n'.join(lines[:10])  # First 10 lines as summary
-        
-        # Reset state
-        global logs, debate_history, observer_reports, final_report, metrics
+        # Reset all state
         logs = []
         debate_history = []
         observer_reports = []
         final_report = ""
         metrics = []
+        current_iteration = 0
+        simulation_paused = False
+        cycle_complete = False
+        architect_logs = []
+        senate_chat_logs = []
         
-        background_tasks.add_task(run_simulation, content)
+        background_tasks.add_task(run_simulation, file)
         return {"status": "Policy file uploaded and simulation started", "filename": filename}
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
 @app.post("/api/submit-policy")
 async def submit_policy(policy: str, background_tasks: BackgroundTasks):
-    # Reset state
     global logs, debate_history, observer_reports, final_report, metrics
+    global current_iteration, simulation_paused, cycle_complete, architect_logs, senate_chat_logs
+    
+    # Reset all state
     logs = []
     debate_history = []
     observer_reports = []
     final_report = ""
     metrics = []
+    current_iteration = 0
+    simulation_paused = False
+    cycle_complete = False
+    architect_logs = []
+    senate_chat_logs = []
     
     background_tasks.add_task(run_simulation, policy)
     return {"status": "Simulation Started"}

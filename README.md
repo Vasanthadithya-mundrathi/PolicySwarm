@@ -1,186 +1,272 @@
-# PolicySwarm - Recursive Consensus Engine
+# PolicySwarm 🐝
+## Recursive Consensus Engine for Policy Testing
 
-![Architecture](file:///.gemini/antigravity/brain/b85ff7a3-c62b-4546-9caf-766a6fb947cd/policyswarm_architecture_1763897669946.png)
+> **Team H5X | ZYND AI-ckathon | Track: Policy Navigator - Public Good**
 
-## 🎯 What It Does
-Stress-tests government policies through **3 levels of AI debate** before they reach humans.
+[![ZYND](https://img.shields.io/badge/Protocol-ZYND-orange)]() [![Ollama](https://img.shields.io/badge/LLM-Ollama%20gemma3:12b-blue)]() [![Privacy](https://img.shields.io/badge/Privacy-Local%20First-green)]()
 
 ---
 
-## 🔄 The 3-Level Loop
+## 🎯 Problem Statement
 
-### **Level 1: Citizen Swarm** 🗣️
-- **100 conversational exchanges** between 10 realistic UK personas
-- Agents respond to each other naturally ("Tom, I hear your point, but...")
-- Natural exits when appropriate ("Need to check my fields now")
-- **Output**: Citizen Satisfaction Score (0-100%)
+> *"Create agent advocates that verify eligibility, interpret complex policies, and guide citizens with trust-backed recommendations—ending bureaucratic opacity."*
 
-### **Level 2: Senate Strategic Debate** 🏛️
-- **10 strategic exchanges** between 3 government observers
-- Debate from viability/implementation perspective
-- Reference each other's points professionally
-- **Output**: Senate Viability Score (0-100%)
+**The Challenge:** Citizens miss vital benefits because government policies are:
+- Written in complex bureaucratic language
+- Have hidden eligibility criteria
+- Lack clear benefit explanations
+- Published without public stress-testing
 
-### **Level 3: Architect Synthesis** 🏗️
-- Synthesizes citizen concerns + Senate analysis
-- Rewrites policy to address issues
-- **Output**: Revised Policy → back to Level 1
+---
 
-### **Consensus Criteria**
-✅ **Success**: Citizen Score > 75% AND Senate Score > 80%  
-🔄 **Repeat**: If not met, loop back (max 3 iterations)  
-📤 **Result**: Final policy shared with humans
+## 💡 Our Solution: PolicySwarm
+
+A **multi-agent collaboration network** that stress-tests policies using ZYND Protocol's interoperability framework.
+
+```
+📄 Policy Input
+       ↓
+🧑‍🤝‍🧑 Level 1: Citizen Agent Network (10 authenticated agents debate)
+       ↓
+🏛️ Level 2: Senate Agent Network (3 credentialed advisors analyze)
+       ↓
+🏗️ Level 3: Architect Agent (synthesizes with verified trust chain)
+       ↓
+📊 Consensus Check → Loop or ✅ Final PDF
+```
+
+---
+
+## 🔗 How We Use ZYND Protocol
+
+### The ZYND Challenge: "From Isolated Agents to Intelligent Networks"
+
+PolicySwarm directly addresses ZYND's core mission: **moving beyond isolated AI agents to interconnected agent ecosystems that coordinate autonomously.**
+
+---
+
+### 1. Functional Agent Networks (DID Model)
+
+Each agent has a **Decentralized Identity (DID)** with defined credentials:
+
+| Agent DID | Role | Credentials | Trust Level |
+|-----------|------|-------------|-------------|
+| `did:ps:citizen:anjali` | Single Mother | Teacher, PWD employee | Verified |
+| `did:ps:citizen:raju` | Auto Driver | Self-employed, No insurance | Verified |
+| `did:ps:senate:trend` | Trend Analyst | Govt. Advisory Role | High Trust |
+| `did:ps:senate:econ` | Economic Advisor | Fiscal Policy Expert | High Trust |
+| `did:ps:senate:law` | Constitutional Expert | Legal Review Authority | High Trust |
+| `did:ps:architect:main` | Policy Architect | Final Synthesis Authority | Highest Trust |
+
+**14 agents** work as a coordinated network, each with:
+- ✅ Unique identity (name, role, background)
+- ✅ Verifiable credentials (expertise, trust level)
+- ✅ Persistent memory across sessions
+- ✅ Emotional state tracking
+
+---
+
+### 2. Trust-Based Interoperability
+
+Agents **discover, authenticate, and collaborate** following ZYND's principles:
+
+**Discovery:**
+- Citizens find and engage with the policy
+- Senate discovers citizen concerns through observation
+- Architect discovers synthesis opportunities
+
+**Authentication:**
+- Each agent's opinion is tagged with their identity
+- Senate advisors have higher trust weight than individual citizens
+- Architect verifies all inputs before synthesis
+
+**Collaboration:**
+- Agents reference each other: *"I agree with Raju's point..."*
+- Trust chains form: Citizen → Senate → Architect
+- Collective intelligence emerges from debate
+
+```
+Citizen:Anjali ──(debates)──→ Citizen:Raju
+       ↓                           ↓
+Senate:TrendAnalyst ←──(observes)──┘
+       ↓
+Senate:EconomicAdvisor ──(validates)──→ Senate:ConstitutionalExpert
+       ↓
+Architect ←──(synthesizes with trust weights)──┘
+```
+
+---
+
+### 3. Decentralized AI Governance
+
+**Why Local LLM (Ollama)?**
+
+Policy documents are **SENSITIVE government data.** Before publication, policies must remain confidential.
+
+| Approach | Data Location | Risk |
+|----------|---------------|------|
+| Cloud LLM (OpenAI/Gemini) | External servers | Data exposure |
+| **ZYND + Ollama (Local)** | Your machine only | Zero exposure |
+
+**Our decentralized approach:**
+- ✅ No central authority controls the conversation
+- ✅ Each agent operates autonomously with local inference
+- ✅ Trust is computed through credential verification, not central servers
+- ✅ Works completely offline
+
+---
+
+## ✅ Features Delivered (Problem → Solution)
+
+| Requirement | Implementation |
+|-------------|----------------|
+| **Policy Interpretation** | Citizens explain policy in their own words |
+| **Eligibility Verification** | Each persona evaluates based on their credentials |
+| **Benefit Matching** | Citizens identify which aspects help them personally |
+| **Citizen Advocacy** | Architect addresses concerns with trust-weighted synthesis |
 
 ---
 
 ## 🚀 Quick Start
 
+### Prerequisites
+- **Python 3.10+**
+- **Node.js 18+**
+- **Ollama** with `gemma3:12b` model (RECOMMENDED & TESTED)
+
+### 1. Clone & Install
 ```bash
-# Terminal 1: Start Ollama
+git clone https://github.com/Vasanthadithya-mundrathi/PolicySwarm.git
+cd PolicySwarm
+chmod +x setup.sh && ./setup.sh
+```
+
+### 2. Start Ollama
+```bash
+# Install Ollama (if not installed)
+brew install ollama   # macOS
+# or visit https://ollama.com
+
+# Pull the recommended model (TESTED)
+ollama pull gemma3:12b
+
+# Start Ollama server
 ollama serve
+```
 
-# Terminal 2: Backend
-cd backend
-source virtualpyenv/bin/activate
-python main.py
+### 3. Run PolicySwarm
+```bash
+./start.sh
+```
 
-# Terminal 3: Frontend
-cd frontend
-npm run dev
+**Access:**
+- 🖥️ **Frontend:** http://localhost:3000
+- 🔌 **Backend API:** http://localhost:8000
 
-# Browser: http://localhost:3001
+### 4. Test with Sample Policy
+Upload via dashboard:
+```
+sample_policies/india_farm_laws_2020.md
 ```
 
 ---
 
-## 🧪 Test Case: UK Poll Tax (1990)
+## ⚙️ LLM Configuration
 
-**Input Policy:**
+Edit `backend/config.json`:
+
+```json
+{
+    "llm_provider": "ollama",
+    "ollama": { 
+        "base_url": "http://localhost:11434",
+        "model": "gemma3:12b" 
+    },
+    "openai": { "api_key": "sk-...", "model": "gpt-4o-mini" },
+    "gemini": { "api_key": "...", "model": "gemini-1.5-flash" },
+    "blaxel": { "api_key": "...", "workspace": "..." }
+}
 ```
-Replace property taxes with a flat-rate 'Community Charge' 
-payable by every adult, regardless of income or property value.
-```
 
-**Expected Result (3 iterations):**
-1. **Iteration 1**: Massive citizen backlash → Architect adds rebates
-2. **Iteration 2**: Still controversial → Architect pivots to income bands
-3. **Iteration 3**: Consensus reached! → Property-band system approved ✅
-
----
-
-## 💡 Key Features
-
-✅ **Real Conversations**: 100 citizen + 10 Senate exchanges (all LLM-generated)  
-✅ **Contextual**: Agents reference each other's specific points  
-✅ **Natural Behavior**: Agents can exit conversations appropriately  
-✅ **Government Perspective**: Senate debates viability/implementation  
-✅ **Iterative Refinement**: Policy improves across iterations  
-✅ **Local & Private**: Runs on Ollama (gemma3:12b) - zero API costs  
-✅ **Premium UI**: Next.js dashboard with real-time updates  
+**✅ Recommended:** `gemma3:12b` via Ollama (tested & verified for this hackathon)
 
 ---
 
 ## 📁 Project Structure
 
 ```
-ZYND project/
+PolicySwarm/
 ├── backend/
-│   ├── main.py                    # 3-level simulation loop
+│   ├── main.py              # FastAPI server
+│   ├── config.json          # LLM provider config
 │   ├── agents/
-│   │   ├── citizen_agent.py       # Level 1: Conversational citizens
-│   │   ├── observer_agent.py      # Level 2: Strategic Senate
-│   │   └── architect_agent.py     # Level 3: Policy synthesis
-│   └── core/llm.py               # Ollama integration
-├── frontend/
-│   ├── src/app/page.tsx          # Main dashboard
-│   └── src/components/
-│       ├── DebateFeed.tsx        # Live debate log
-│       ├── SenateView.tsx        # Senate analysis view
-│       ├── ArchitectView.tsx     # Architect synthesis view
-│       └── ...
-└── walkthrough.md                # Detailed guide
+│   │   ├── citizen_agent.py # 10 citizen personas (DID: citizen:*)
+│   │   ├── observer_agent.py # 3 senate advisors (DID: senate:*)
+│   │   └── architect_agent.py # Policy synthesizer (DID: architect:main)
+│   └── core/
+│       ├── llm.py           # Multi-provider interface
+│       └── pdf_generator.py # Gazette-style PDF
+├── frontend/                # Next.js dashboard
+├── sample_policies/         # Test policies
+├── videoscript.md           # Demo video script
+├── presentation.md          # Hackathon slides
+├── setup.sh                 # Auto-install
+└── start.sh                 # Launch servers
 ```
 
 ---
 
-## 🎨 UI Views
+## 📄 Output: Professional PDF
 
-1. **Dashboard** - Policy input + live debate + metrics + report
-2. **Agents** - View all 10 citizen personas
-3. **Senate** - Dedicated Senate debate view
-4. **Architect** - Policy evolution tracker
-5. **Settings** - Configuration (placeholder)
+Download generates a government-style PDF with:
 
----
+1. **Consensus Status** - Trust-weighted scores
+2. **Eligibility Criteria** - Who qualifies (from citizen feedback)
+3. **Benefits Summary** - What citizens get
+4. **Policy Interpretation** - Simplified language
+5. **Citizen Advocacy** - Key concerns addressed
+6. **Government Response** - Senate analysis
 
-## ⚙️ Tech Stack
-
-**Backend**: FastAPI + Python + Ollama (gemma3:12b)  
-**Frontend**: Next.js 14 + TypeScript + Tailwind + Framer Motion  
-**Charts**: Recharts  
-**Markdown**: ReactMarkdown  
+*Format: Indian Gazette style (A4, Times Roman, proper margins)*
 
 ---
 
-## 📊 Performance
+## 🧪 Test Cases
 
-| Metric | Value |
-|--------|-------|
-| Exchanges per iteration | ~110 (100 citizen + 10 Senate) |
-| Full 3-iteration simulation | ~45-60 minutes |
-| Total LLM calls | ~330 |
-| Unique personas | 14 (10 citizens + 3 senators + 1 architect) |
-
-**Tip**: Reduce `MAX_EXCHANGES = 100` to `25` in `main.py` for faster testing
+| Policy | Real Outcome | PolicySwarm Prediction |
+|--------|--------------|------------------------|
+| India Farm Laws 2020 | Repealed | Low citizen score ✓ |
+| India CAA 2019 | Protests | Divisive sentiment ✓ |
+| UK Poll Tax 1989 | Repealed | Consensus failure ✓ |
 
 ---
 
-## 🐛 Troubleshooting
+## 🏆 ZYND Hackathon Alignment
 
-**Backend not updating?**  
-→ Restart backend: `Ctrl+C` then `python main.py`
+### Expected Outcomes → Our Delivery
 
-**Frontend not showing new data?**  
-→ Clear cache and refresh (Cmd+Shift+R)
-
-**Simulation too slow?**  
-→ Reduce exchange counts in `main.py` (lines 125, 190)
-
-**Ollama not responding?**  
-→ Check `ollama serve` is running  
-→ Verify `ollama list` shows `gemma3:12b`
+| ZYND Expectation | PolicySwarm Implementation |
+|-----------------|---------------------------|
+| **Functional Agent Networks** | 14 agents with DID, credentials, trust levels |
+| **Trust-Based Interoperability** | Agents reference each other, weighted synthesis |
+| **Decentralized AI Governance** | Local LLM, no central authority, offline capable |
+| **Real-World Scenario** | Indian policy testing (Farm Laws, CAA, etc.) |
 
 ---
 
-## 📚 Documentation
+## 👥 Team H5X
 
-- [walkthrough.md](walkthrough.md) - Quick start guide
-- [FINAL_IMPLEMENTATION.md](.gemini/.../FINAL_IMPLEMENTATION.md) - Complete technical summary
-- [project_summary.md](.gemini/.../project_summary.md) - Detailed feature list
+**Vasanthadithya Mundrathi**  
+Full Stack Developer
 
----
-
-## 🏆 What Makes This Special
-
-This isn't a demo or simulation with placeholder data. **Every single message is generated in real-time by AI agents** that:
-- Have unique personalities and backgrounds
-- Reference each other's points contextually
-- Debate from different perspectives (citizen vs. government)
-- Iteratively refine policies until consensus is reached
-
-It's democracy at scale, tested before it reaches humans. 🚀
+🐙 GitHub: [Vasanthadithya-mundrathi](https://github.com/Vasanthadithya-mundrathi)
 
 ---
 
-## 👨‍💻 Built With
+## 📜 License
 
-- **Ollama** (Local LLM inference)
-- **Google Gemma 3** (12B parameter model)
-- **FastAPI** (Python backend)
-- **Next.js** (React frontend)
-- **Tailwind CSS** (Styling)
-- **Framer Motion** (Animations)
+MIT License - Open for government and research use.
 
 ---
 
-**Ready to test your first policy? Fire up the servers and watch the swarm debate! 🐝**
+**PolicySwarm: Because every policy deserves to be stress-tested by the people it will affect.** 🐝
