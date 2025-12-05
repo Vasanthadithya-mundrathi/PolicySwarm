@@ -1,7 +1,5 @@
 # PolicySwarm - Recursive Consensus Engine
 
-![Architecture](file:///.gemini/antigravity/brain/b85ff7a3-c62b-4546-9caf-766a6fb947cd/policyswarm_architecture_1763897669946.png)
-
 ## 🎯 What It Does
 Stress-tests government policies through **3 levels of AI debate** before they reach humans.
 
